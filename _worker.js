@@ -8,6 +8,8 @@ export default {
     process.env.GITHUB_BRANCH = env.GITHUB_BRANCH
     process.env.NEXTAUTH_URL = env.NEXTAUTH_URL
     process.env.NEXTAUTH_SECRET = env.GITHUB_SECRET
+    process.env.D1_DATABASE_ENABLED = env.D1_DATABASE_ENABLED || 'false'
+    process.env.DB_CACHE_EXPIRY = env.DB_CACHE_EXPIRY || '30000'
 
     if (request.url.includes('/api/auth')) {
       return env.ASSETS.fetch(request)
@@ -24,4 +26,4 @@ export default {
       throw e
     }
   }
-} 
+}

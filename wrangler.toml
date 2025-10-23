@@ -10,4 +10,10 @@ GITHUB_REPO = "NavSphere"
 GITHUB_BRANCH = "main"
 NEXTAUTH_URL = "https://navpage-e23.pages.dev/api/auth"
 NEXT_PUBLIC_API_URL="https://navpage-e23.pages.dev/"
+D1_DATABASE_ENABLED = "true"
+DB_CACHE_EXPIRY = "30000"
 
+[[env.production.d1_databases]]
+binding = "DB" # 可在 Worker 中通过 env.DB 访问
+database_name = "navsphere-db"
+database_id = "9a0ffcf6-d182-44d2-9a45-53c9982f303b" # 使用您创建的数据库ID

@@ -1,60 +1,42 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { commitFile, getFileContent } from '@/lib/github'
+import { DatabaseService } from '@/services/DatabaseService'
+import type { NavigationData } from '@/types/navigation'
 
 export const runtime = 'edge'
 
-export async function POST() {
+export async function POST(request: Request) {
+  const useDatabase = process.env.D1_DATABASE_ENABLED === 'true' && (request as any).env?.DB;
+  
   try {
     const session = await auth()
-    if (!session?.user?.accessToken) {
+    if (!session?.user?.accessToken && !useDatabase) {
       return new Response('Unauthorized', { status: 401 })
     }
 
-    // 检查默认数据文件是否存在
-    try {
-      const defaultData = await getFileContent('navsphere/content/navigation-default.json')
-      
-      // 验证默认数据格式
-      if (!defaultData || typeof defaultData !== 'object' || !defaultData.navigationItems) {
-        return NextResponse.json(
-          { 
-            error: 'Invalid default data format', 
-            details: 'navigation-default.json does not contain valid navigation data' 
-          },
-          { status: 400 }
-        )
-      }
-      
-      // 将默认数据写入到navigation.json
+    // 获取默认导航数据
+    const defaultData = await getFileContent('navsphere/content/navigation-default.json') as NavigationData
+    
+    if (useDatabase) {
+      // 使用数据库存储
+      const dbService = new DatabaseService((request as any).env);
+      await dbService.updateNavigationData(defaultData);
+      return NextResponse.json({ success: true })
+    } else {
+      // 使用原有的GitHub文件存储
       await commitFile(
         'navsphere/content/navigation.json',
         JSON.stringify(defaultData, null, 2),
-        'Restore navigation data to default',
+        'Restore navigation data from default',
         session.user.accessToken
       )
-
-      return NextResponse.json(defaultData)
-    } catch (fileError) {
-      // 检查是否是文件不存在的错误
-      if ((fileError as Error).message.includes('404') || (fileError as Error).message.includes('not found')) {
-        return NextResponse.json(
-          { 
-            error: 'Default data file not found', 
-            details: 'navigation-default.json file does not exist in the repository' 
-          },
-          { status: 404 }
-        )
-      }
-      throw fileError
+      return NextResponse.json({ success: true })
     }
   } catch (error) {
     console.error('Failed to restore navigation data:', error)
     return NextResponse.json(
-      { 
-        error: 'Failed to restore navigation data', 
-        details: (error as Error).message 
-      },
+      { error: error instanceof Error ? error.message : 'Failed to restore navigation data' },
       { status: 500 }
     )
   }

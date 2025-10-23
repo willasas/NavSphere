@@ -112,5 +112,13 @@
   },
   "browser": {
     "crypto": false
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "msw",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

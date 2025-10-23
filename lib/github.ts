@@ -111,4 +111,10 @@ export async function commitFile(
       await delay(1000 * attempt)
     }
   }
-} 
+}
+
+// 添加一个函数来检查是否使用数据库
+export function isDatabaseEnabled(): boolean {
+  // 检查环境变量来确定是否启用数据库
+  return !!process.env.D1_DATABASE_ENABLED && process.env.D1_DATABASE_ENABLED === 'true';
+}
