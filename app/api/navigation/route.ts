@@ -49,6 +49,11 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true })
     } else {
       // 使用原有的GitHub文件存储
+      // 修复类型错误：确保session和session.user存在再访问accessToken
+      if (!session || !session.user) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      
       await commitFile(
         'navsphere/content/navigation.json',
         JSON.stringify(data, null, 2),
@@ -69,11 +74,17 @@ export async function PUT(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user?.accessToken) {
+    if (!session || !session.user) {
       return new Response('Unauthorized', { status: 401 })
     }
 
     const data = await request.json()
+    
+    // 修复类型错误：确保session和session.user存在再访问accessToken
+    if (!session || !session.user) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+    
     await commitFile(
       'navsphere/content/navigation.json',
       JSON.stringify(data, null, 2),

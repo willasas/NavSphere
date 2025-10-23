@@ -56,6 +56,11 @@ export async function POST(request: Request) {
             await dbService.addResourceMetadata(imageUrl, commitHash);
         } else {
             // Handle metadata using file storage
+            // 修复类型错误：确保session和session.user存在再访问accessToken
+            if (!session || !session.user) {
+                return new Response('Unauthorized', { status: 401 });
+            }
+            
             const metadata = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata;
             metadata.metadata.unshift({ 
                 commit: commitHash,  // 使用实际的 commit hash
@@ -140,6 +145,11 @@ export async function DELETE(request: Request) {
             deletedCount = result.deletedCount;
         } else {
             // 使用文件存储方式删除资源元数据
+            // 修复类型错误：确保session和session.user存在再访问accessToken
+            if (!session || !session.user) {
+                return new Response('Unauthorized', { status: 401 });
+            }
+            
             // 获取当前的资源元数据
             const metadata = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata;
             
