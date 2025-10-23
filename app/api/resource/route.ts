@@ -56,8 +56,8 @@ export async function POST(request: Request) {
             await dbService.addResourceMetadata(imageUrl, commitHash);
         } else {
             // Handle metadata using file storage
-            // 修复类型错误：确保session和session.user存在再访问accessToken
-            if (!session || !session.user) {
+            // 修复类型错误：确保session、session.user和accessToken都存在
+            if (!session || !session.user || !session.user.accessToken) {
                 return new Response('Unauthorized', { status: 401 });
             }
             
@@ -145,8 +145,8 @@ export async function DELETE(request: Request) {
             deletedCount = result.deletedCount;
         } else {
             // 使用文件存储方式删除资源元数据
-            // 修复类型错误：确保session和session.user存在再访问accessToken
-            if (!session || !session.user) {
+            // 修复类型错误：确保session、session.user和accessToken都存在
+            if (!session || !session.user || !session.user.accessToken) {
                 return new Response('Unauthorized', { status: 401 });
             }
             

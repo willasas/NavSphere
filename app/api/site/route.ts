@@ -62,8 +62,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true })
     } else {
       // 使用原有的GitHub文件存储
-      // 修复类型错误：确保session和session.user存在再访问accessToken
-      if (!session || !session.user) {
+      // 修复类型错误：确保session、session.user和accessToken都存在
+      if (!session || !session.user || !session.user.accessToken) {
         return new Response('Unauthorized', { status: 401 })
       }
       
