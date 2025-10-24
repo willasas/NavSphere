@@ -47,6 +47,11 @@ export async function POST(request: Request) {
         const base64Data = image.split(",")[1]; // Extract the Base64 part
         const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)); // Convert Base64 to binary
 
+        // 在使用session.user.accessToken之前检查其存在性
+        if (!useDatabase && (!session || !session.user || !session.user.accessToken)) {
+            return new Response('Unauthorized', { status: 401 });
+        }
+
         // 获取上传结果，包含路径和 commit hash
         const { path: imageUrl, commitHash } = await uploadImageToGitHub(binaryData, session.user.accessToken);
 
@@ -56,11 +61,6 @@ export async function POST(request: Request) {
             await dbService.addResourceMetadata(imageUrl, commitHash);
         } else {
             // Handle metadata using file storage
-            // 修复类型错误：确保session、session.user和accessToken都存在
-            if (!session || !session.user || !session.user.accessToken) {
-                return new Response('Unauthorized', { status: 401 });
-            }
-            
             const metadata = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata;
             metadata.metadata.unshift({ 
                 commit: commitHash,  // 使用实际的 commit hash

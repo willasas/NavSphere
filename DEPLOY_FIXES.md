@@ -17,11 +17,17 @@ Type error: Argument of type 'string | undefined' is not assignable to parameter
 Type 'undefined' is not assignable to type 'string'.
 ```
 
-类似的问题也出现在其他API路由文件中。
+第三次部署错误：
+```
+./app/api/resource/route.ts:51:86
+Type error: 'session' is possibly 'null'.
+```
 
 ## 修复方案
 
 在所有API路由文件中添加了对session对象的完整检查，确保在访问`session.user.accessToken`之前，session、session.user和accessToken都存在。
+
+特别地，在[app/api/resource/route.ts](file:///d:/VDhub/NavSphere/app/api/resource/route.ts)文件中，我们在调用[uploadImageToGitHub](file://d:\VDhub\NavSphere\app\api\resource\route.ts#L89-L122)函数之前添加了对session对象的检查，确保只在需要使用GitHub API时才检查认证信息。
 
 ## 修复的文件列表
 
