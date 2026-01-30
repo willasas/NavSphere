@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 优化构建输出
+  output: 'standalone',
 
   // 图像配置
   images: {
@@ -41,21 +43,7 @@ const nextConfig = {
   // 环境变量配置
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  },
-
-  // Webpack 配置
-  webpack: (config) => {
-    // 处理 fs 和 path 模块的导入问题
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      "fs": false,
-      "path": false,
-      "os": false,
-      "net": false,
-      "tls": false,
-    };
-    return config;
-  },
+  }
 }
 
 module.exports = nextConfig

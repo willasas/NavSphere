@@ -502,7 +502,7 @@ class D1StorageService implements StorageService {
     try {
       // 检查是否存在配置记录
       const existsResult = await this.executeQuery("SELECT id FROM site_config WHERE id = 1");
-      const exists = (existsResult as any).results.length > 0;
+      const exists = existsResult.results.length > 0;
 
       if (exists) {
         // 更新现有记录
@@ -582,7 +582,7 @@ class D1StorageService implements StorageService {
         true // 使用缓存
       );
 
-      return (result as any).results.map((item: any) => ({
+      return result.results.map((item: any) => ({
         hash: item.id,
         path: item.path,
         commit: item.commit_hash

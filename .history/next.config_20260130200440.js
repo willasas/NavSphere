@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 优化构建输出
+  output: 'standalone',
 
   // 图像配置
   images: {

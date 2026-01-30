@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-
-  // 图像配置
+  // Docker 部署支持
+  output: 'standalone',
+  
   images: {
     domains: [
       'dash.cloudflare.com',
@@ -16,8 +17,6 @@ const nextConfig = {
       },
     ],
   },
-
-  // 重写规则
   async rewrites() {
     return [
       {
@@ -30,32 +29,12 @@ const nextConfig = {
       }
     ]
   },
-
-  // 实验性功能
+  // Cloudflare Pages configuration
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost', 'navsphere.com', '*.vercel.app']
+      allowedOrigins: ['localhost', 'navsphere.com']
     }
-  },
-
-  // 环境变量配置
-  env: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  },
-
-  // Webpack 配置
-  webpack: (config) => {
-    // 处理 fs 和 path 模块的导入问题
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      "fs": false,
-      "path": false,
-      "os": false,
-      "net": false,
-      "tls": false,
-    };
-    return config;
-  },
+  }
 }
 
 module.exports = nextConfig

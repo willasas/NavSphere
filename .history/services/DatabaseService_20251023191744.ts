@@ -1,98 +1,12 @@
-import { JsonFileStorageService } from './JsonFileStorageService';
-
-// 存储服务接口
-interface StorageService {
-  initializeDatabase(): Promise<void>;
-  getNavigationData(): Promise<any>;
-  updateNavigationData(data: any): Promise<any>;
-  getSiteConfig(): Promise<any>;
-  updateSiteConfig(config: any): Promise<boolean>;
-  addResourceMetadata(path: string, commitHash: string): Promise<any>;
-  getResourceMetadata(): Promise<any[]>;
-  deleteResourceMetadata(hashes: string[]): Promise<any>;
-}
-
 export class DatabaseService {
-  private storageService: StorageService;
-
-  constructor(env: any) {
-    // 根据环境配置选择存储服务
-    if (env && env.DB) {
-      // 使用D1数据库
-      this.storageService = new D1StorageService(env.DB);
-    } else {
-      // 使用JSON文件存储
-      this.storageService = new JsonFileStorageService();
-    }
-  }
-
-  /**
-   * 初始化数据库表
-   */
-  async initializeDatabase() {
-    return this.storageService.initializeDatabase();
-  }
-
-  /**
-   * 获取导航数据
-   */
-  async getNavigationData() {
-    return this.storageService.getNavigationData();
-  }
-
-  /**
-   * 更新导航数据
-   */
-  async updateNavigationData(data: any) {
-    return this.storageService.updateNavigationData(data);
-  }
-
-  /**
-   * 获取站点配置
-   */
-  async getSiteConfig() {
-    return this.storageService.getSiteConfig();
-  }
-
-  /**
-   * 更新站点配置
-   */
-  async updateSiteConfig(config: any) {
-    return this.storageService.updateSiteConfig(config);
-  }
-
-  /**
-   * 添加资源元数据
-   */
-  async addResourceMetadata(path: string, commitHash: string) {
-    return this.storageService.addResourceMetadata(path, commitHash);
-  }
-
-  /**
-   * 获取所有资源元数据
-   */
-  async getResourceMetadata() {
-    return this.storageService.getResourceMetadata();
-  }
-
-  /**
-   * 删除资源元数据
-   */
-  async deleteResourceMetadata(hashes: string[]) {
-    return this.storageService.deleteResourceMetadata(hashes);
-  }
-}
-
-
-
-// D1存储服务实现
-class D1StorageService implements StorageService {
+  private env: any;
   private db: any;
   private cache: Map<string, { data: any, timestamp: number }>;
   private cacheExpiry: number;
 
-  constructor(db: any) {
-    this.db = db;
+  constructor(env: any) {
+    this.env = env;
+    this.db = env.DB;
     this.cache = new Map();
     this.cacheExpiry = parseInt(process.env.DB_CACHE_EXPIRY || '30000'); // 默认30秒
   }
@@ -135,7 +49,7 @@ class D1StorageService implements StorageService {
    */
   private async executeQuery<T>(query: string, params: any[] = [], useCache: boolean = false): Promise<T> {
     const cacheKey = this.generateCacheKey(query, ...params);
-
+    
     // 尝试从缓存获取
     if (useCache) {
       const cached = this.getFromCache(cacheKey);
@@ -143,7 +57,7 @@ class D1StorageService implements StorageService {
         return cached;
       }
     }
-
+    
     try {
       let result;
       if (params.length > 0) {
@@ -151,12 +65,12 @@ class D1StorageService implements StorageService {
       } else {
         result = await this.db.prepare(query).all();
       }
-
+      
       // 将结果存入缓存
       if (useCache) {
         this.setInCache(cacheKey, result);
       }
-
+      
       return result as T;
     } catch (error) {
       console.error(`数据库查询失败: ${query}`, error);
@@ -175,10 +89,10 @@ class D1StorageService implements StorageService {
       } else {
         result = await this.db.prepare(query).run();
       }
-
+      
       // 清除缓存
       this.clearCache();
-
+      
       return result;
     } catch (error) {
       console.error(`数据库变更失败: ${query}`, error);
@@ -245,39 +159,39 @@ class D1StorageService implements StorageService {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-
+      
       // 创建索引
       await this.createIndexes();
-
+      
       console.log('数据库初始化完成');
     } catch (error) {
       console.error('数据库初始化失败:', error);
       throw error;
     }
   }
-
+  
   /**
    * 创建索引
    */
   private async createIndexes() {
     try {
       await this.executeMutation(`
-        CREATE INDEX IF NOT EXISTS idx_navigation_items_parent_id
+        CREATE INDEX IF NOT EXISTS idx_navigation_items_parent_id 
         ON navigation_items(parent_id)
       `);
 
       await this.executeMutation(`
-        CREATE INDEX IF NOT EXISTS idx_resources_navigation_item_id
+        CREATE INDEX IF NOT EXISTS idx_resources_navigation_item_id 
         ON resources(navigation_item_id)
       `);
 
       await this.executeMutation(`
-        CREATE INDEX IF NOT EXISTS idx_navigation_items_enabled
+        CREATE INDEX IF NOT EXISTS idx_navigation_items_enabled 
         ON navigation_items(enabled)
       `);
 
       await this.executeMutation(`
-        CREATE INDEX IF NOT EXISTS idx_resources_enabled
+        CREATE INDEX IF NOT EXISTS idx_resources_enabled 
         ON resources(enabled)
       `);
     } catch (error) {
@@ -293,25 +207,25 @@ class D1StorageService implements StorageService {
     try {
       // 查询所有启用的导航项
       const navigationItemsResult = await this.executeQuery(
-        `SELECT * FROM navigation_items
-         WHERE enabled = 1
-         ORDER BY parent_id, order_index`,
-        [],
+        `SELECT * FROM navigation_items 
+         WHERE enabled = 1 
+         ORDER BY parent_id, order_index`, 
+        [], 
         true // 使用缓存
       );
-
-      const navigationItems = (navigationItemsResult as any).results;
-
+      
+      const navigationItems = navigationItemsResult.results;
+      
       // 查询所有站点资源
       const resourcesResult = await this.executeQuery(
-        `SELECT * FROM resources
-         WHERE enabled = 1
+        `SELECT * FROM resources 
+         WHERE enabled = 1 
          ORDER BY navigation_item_id`,
         [],
         true // 使用缓存
       );
-
-      const resources = (resourcesResult as any).results;
+      
+      const resources = resourcesResult.results;
 
       // 构建层级结构
       return this.buildNavigationStructure(navigationItems, resources);
@@ -378,14 +292,14 @@ class D1StorageService implements StorageService {
     try {
       // 开始事务
       // 注意：D1的事务支持有限，这里简化处理
-
+      
       // 清除现有数据
       await this.executeMutation("DELETE FROM navigation_items");
       await this.executeMutation("DELETE FROM resources");
-
+      
       // 插入新数据
       await this.insertNavigationData(data.navigationItems);
-
+      
       return { success: true };
     } catch (error) {
       console.error('更新导航数据失败:', error);
@@ -448,13 +362,13 @@ class D1StorageService implements StorageService {
   async getSiteConfig() {
     try {
       const result = await this.executeQuery(
-        "SELECT * FROM site_config WHERE id = 1",
-        [],
+        "SELECT * FROM site_config WHERE id = 1", 
+        [], 
         true // 使用缓存
       );
-
-      const row = (result as any).results[0];
-
+      
+      const row = result.results[0];
+      
       if (row) {
         return {
           basic: {
@@ -472,7 +386,7 @@ class D1StorageService implements StorageService {
           }
         };
       }
-
+      
       // 返回默认配置
       return {
         basic: {
@@ -502,8 +416,8 @@ class D1StorageService implements StorageService {
     try {
       // 检查是否存在配置记录
       const existsResult = await this.executeQuery("SELECT id FROM site_config WHERE id = 1");
-      const exists = (existsResult as any).results.length > 0;
-
+      const exists = existsResult.results.length > 0;
+      
       if (exists) {
         // 更新现有记录
         await this.executeMutation(`
@@ -542,7 +456,7 @@ class D1StorageService implements StorageService {
           config.navigation.linkTarget
         ]);
       }
-
+      
       return true;
     } catch (error) {
       console.error('更新站点配置失败:', error);
@@ -557,12 +471,12 @@ class D1StorageService implements StorageService {
     try {
       // 生成唯一ID
       const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
+      
       await this.executeMutation(`
         INSERT INTO resource_metadata (id, path, commit_hash)
         VALUES (?, ?, ?)
       `, [id, path, commitHash]);
-
+      
       return { id, path, commitHash };
     } catch (error) {
       console.error('添加资源元数据失败:', error);
@@ -576,13 +490,13 @@ class D1StorageService implements StorageService {
   async getResourceMetadata() {
     try {
       const result = await this.executeQuery(
-        `SELECT * FROM resource_metadata
+        `SELECT * FROM resource_metadata 
          ORDER BY created_at DESC`,
         [],
         true // 使用缓存
       );
-
-      return (result as any).results.map((item: any) => ({
+      
+      return result.results.map((item: any) => ({
         hash: item.id,
         path: item.path,
         commit: item.commit_hash
@@ -600,12 +514,12 @@ class D1StorageService implements StorageService {
     try {
       // 构建占位符
       const placeholders = hashes.map(() => '?').join(',');
-
+      
       const result = await this.executeMutation(`
-        DELETE FROM resource_metadata
+        DELETE FROM resource_metadata 
         WHERE id IN (${placeholders})
       `, hashes);
-
+      
       return { deletedCount: result.meta.changes };
     } catch (error) {
       console.error('删除资源元数据失败:', error);

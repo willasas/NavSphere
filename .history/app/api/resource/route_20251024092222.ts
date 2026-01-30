@@ -9,7 +9,7 @@ export const runtime = 'edge'
 export async function GET(request: Request) {
     // 检查是否启用数据库
     const useDatabase = process.env.D1_DATABASE_ENABLED === 'true' && (request as any).env?.DB;
-
+    
     if (useDatabase) {
         try {
             const dbService = new DatabaseService((request as any).env);
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
             // 如果数据库访问失败，回退到文件存储
         }
     }
-
+    
     // 使用原有的文件存储方式
     try {
         const data = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     const useDatabase = process.env.D1_DATABASE_ENABLED === 'true' && (request as any).env?.DB;
-
+    
     try {
         const session = await auth();
         if (!session?.user?.accessToken && !useDatabase) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)); // Convert Base64 to binary
 
         // 在使用session.user.accessToken之前检查其存在性
-        if (!session || !session.user || !session.user.accessToken) {
+        if (!useDatabase && (!session || !session.user || !session.user.accessToken)) {
             return new Response('Unauthorized', { status: 401 });
         }
 
@@ -62,10 +62,10 @@ export async function POST(request: Request) {
         } else {
             // Handle metadata using file storage
             const metadata = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata;
-            metadata.metadata.unshift({
+            metadata.metadata.unshift({ 
                 commit: commitHash,  // 使用实际的 commit hash
                 hash: commitHash,    // 使用相同的 hash 作为资源标识
-                path: imageUrl
+                path: imageUrl 
             });
 
             await commitFile(
@@ -124,7 +124,7 @@ async function uploadImageToGitHub(binaryData: Uint8Array, token: string): Promi
 
 export async function DELETE(request: Request) {
     const useDatabase = process.env.D1_DATABASE_ENABLED === 'true' && (request as any).env?.DB;
-
+    
     try {
         const session = await auth();
         if (!session?.user?.accessToken && !useDatabase) {
@@ -132,7 +132,7 @@ export async function DELETE(request: Request) {
         }
 
         const { resourceHashes } = await request.json();
-
+        
         if (!Array.isArray(resourceHashes) || resourceHashes.length === 0) {
             return NextResponse.json({ error: 'Invalid resource hashes' }, { status: 400 });
         }
@@ -149,10 +149,10 @@ export async function DELETE(request: Request) {
             if (!session || !session.user || !session.user.accessToken) {
                 return new Response('Unauthorized', { status: 401 });
             }
-
+            
             // 获取当前的资源元数据
             const metadata = await getFileContent('navsphere/content/resource-metadata.json') as ResourceMetadata;
-
+            
             // 过滤掉要删除的资源
             const originalCount = metadata.metadata.length;
             metadata.metadata = metadata.metadata.filter(item => !resourceHashes.includes(item.hash));
@@ -170,10 +170,10 @@ export async function DELETE(request: Request) {
         // 注意：这里只是从元数据中删除了引用，实际的图片文件仍然存在于GitHub仓库中
         // 如果需要删除实际文件，需要额外的GitHub API调用
 
-        return NextResponse.json({
-            success: true,
+        return NextResponse.json({ 
+            success: true, 
             deletedCount,
-            message: `成功删除 ${deletedCount} 个资源`
+            message: `成功删除 ${deletedCount} 个资源` 
         });
     } catch (error) {
         console.error('Failed to delete resources:', error);

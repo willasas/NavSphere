@@ -582,7 +582,7 @@ class D1StorageService implements StorageService {
         true // 使用缓存
       );
 
-      return (result as any).results.map((item: any) => ({
+      return result.results.map((item: any) => ({
         hash: item.id,
         path: item.path,
         commit: item.commit_hash

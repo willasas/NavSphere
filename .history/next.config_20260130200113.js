@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 优化构建输出
+  output: 'standalone',
 
   // 图像配置
   images: {
@@ -44,16 +46,17 @@ const nextConfig = {
   },
 
   // Webpack 配置
-  webpack: (config) => {
-    // 处理 fs 和 path 模块的导入问题
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      "fs": false,
-      "path": false,
-      "os": false,
-      "net": false,
-      "tls": false,
-    };
+  webpack: (config, { isServer, isEdgeRuntime }) => {
+    if (isEdgeRuntime) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        "fs": false,
+        "path": false,
+        "os": false,
+        "net": false,
+        "tls": false,
+      };
+    }
     return config;
   },
 }
